@@ -22,100 +22,132 @@ app.use((req, res, next) => {
 const HLS_ROOT = path.resolve("./public/hls");
 tools.clearDir(HLS_ROOT); // 先清空
 app.get(/^\/hls\/(.+)$/, async (req, res) => {
-  const reqPath = req.params[0];
-  const filePath = path.join(HLS_ROOT, reqPath);
-  // 防目录穿越
-  if (!filePath.startsWith(HLS_ROOT)) return res.status(403).end();
-  // 没有找到文件，等待
-  if (!fs.existsSync(filePath)) {
-    try {
+  try {
+    const reqPath = req.params[0];
+    const filePath = path.join(HLS_ROOT, reqPath);
+    // 防目录穿越
+    if (!filePath.startsWith(HLS_ROOT)) return res.status(403).end();
+    // 没有找到文件，等待
+    if (!fs.existsSync(filePath)) {
       await tools.waitForFile(filePath);
-    } catch {
-      return res.status(404).end();
     }
-  }
-  // Content-Type
-  if (filePath.endsWith(".m3u8")) {
-    res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-  } else if (filePath.endsWith(".ts")) {
-    res.setHeader("Content-Type", "video/mp2t");
-  }
-  const stat = fs.statSync(filePath);
-  const range = req.headers.range;
-  if (range) {
-    const [startStr, endStr] = range.replace("bytes=", "").split("-");
-    const start = parseInt(startStr, 10);
-    const end = endStr ? parseInt(endStr, 10) : stat.size - 1;
-    res.status(206);
-    res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
-    res.setHeader("Accept-Ranges", "bytes");
-    res.setHeader("Content-Length", end - start + 1);
-    fs.createReadStream(filePath, { start, end }).pipe(res);
-  } else {
-    res.setHeader("Content-Length", stat.size);
-    fs.createReadStream(filePath).pipe(res);
+    // Content-Type
+    if (filePath.endsWith(".m3u8")) {
+      res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+    } else if (filePath.endsWith(".ts")) {
+      res.setHeader("Content-Type", "video/mp2t");
+    }
+    const stat = fs.statSync(filePath);
+    const range = req.headers.range;
+    if (range) {
+      const [startStr, endStr] = range.replace("bytes=", "").split("-");
+      const start = parseInt(startStr, 10);
+      const end = endStr ? parseInt(endStr, 10) : stat.size - 1;
+      res.status(206);
+      res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
+      res.setHeader("Accept-Ranges", "bytes");
+      res.setHeader("Content-Length", end - start + 1);
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    } else {
+      res.setHeader("Content-Length", stat.size);
+      fs.createReadStream(filePath).pipe(res);
+    }
+  } catch {
+    return res.status(500).end();
   }
 });
 
 // 获取设备信息
 app.get("/getDeviceInfo", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const deviceInfo = await tools.getDeviceInfo(query);
-  return res.json(deviceInfo);
+  try {
+    const { query } = url.parse(req.url, true);
+    const deviceInfo = await tools.getDeviceInfo(query);
+    return res.json(deviceInfo);
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 // 获取通道
 app.get("/getIpcChannels", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const channels = await tools.getIpcChannels(query);
-  return res.json(channels);
+  try {
+    const { query } = url.parse(req.url, true);
+    const channels = await tools.getIpcChannels(query);
+    return res.json(channels);
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 // 获取通道及名称
 app.get("/getIpcChannelsName", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const channels = await tools.getIpcChannelsName(query);
-  return res.json(channels);
+  try {
+    const { query } = url.parse(req.url, true);
+    const channels = await tools.getIpcChannelsName(query);
+    return res.json(channels);
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 // 获取设备端口
 app.get("/getDevicePorts", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const ports = await tools.getDevicePorts(query);
-  return res.json(ports);
+  try {
+    const { query } = url.parse(req.url, true);
+    const ports = await tools.getDevicePorts(query);
+    return res.json(ports);
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 // 截图
 app.get("/captureSnapshot", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const imgData = await tools.captureSnapshot(query);
-  res.setHeader("Content-Type", "image/jpeg");
-  res.setHeader("Content-Length", imgData.length);
-  return res.end(imgData);
+  try {
+    const { query } = url.parse(req.url, true);
+    const imgData = await tools.captureSnapshot(query);
+    res.setHeader("Content-Type", "image/jpeg");
+    res.setHeader("Content-Length", imgData.length);
+    return res.end(imgData);
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 // 开始播放
 app.get("/streamStart", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const { deviceId, channel, rtsp } = query;
-  startStream(deviceId, channel, rtsp);
-  res.json({ ok: true, m3u8: `/hls/${deviceId}_${channel}/index.m3u8` });
+  try {
+    const { query } = url.parse(req.url, true);
+    const { deviceId, channel, rtsp } = query;
+    startStream(deviceId, channel, rtsp);
+    res.json({ ok: true, m3u8: `/hls/${deviceId}_${channel}/index.m3u8` });
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 // 停止播放
 app.get("/streamStop", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const { deviceId, channel } = query;
-  stopStream(deviceId, channel);
-  res.json({ ok: true });
+  try {
+    const { query } = url.parse(req.url, true);
+    const { deviceId, channel } = query;
+    stopStream(deviceId, channel);
+    res.json({ ok: true });
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 // 心跳处理
 app.get("/streamHeartbeat", async (req, res) => {
-  const { query } = url.parse(req.url, true);
-  const { deviceId, channel } = query;
-  heartbeat(deviceId, channel);
-  res.json({ ok: true });
+  try {
+    const { query } = url.parse(req.url, true);
+    const { deviceId, channel } = query;
+    heartbeat(deviceId, channel);
+    res.json({ ok: true });
+  } catch {
+    return res.status(500).end();
+  }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
