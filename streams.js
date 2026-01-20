@@ -82,19 +82,6 @@ export function heartbeat(deviceId, channel) {
   if (stream) stream.lastActive = Date.now();
 }
 
-// 定时清理
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, stream] of streamMap.entries()) {
-    if (stream.watchCount <= 0 || now - stream.lastActive > TIMEOUT) {
-      stream.proc.kill("SIGKILL");
-      fs.rmSync(stream.dir, { recursive: true, force: true });
-      streamMap.delete(key);
-      console.log("Auto stop stream:", key);
-    }
-  }
-}, 5000); // 每5秒检查一次
-
 // 停止流（用户手动退出，可选）
 export function stopStream(deviceId, channel) {
   const key = `${deviceId}_${channel}`;
@@ -145,3 +132,20 @@ export function snapshotStream({ rtspUrl }) {
     }
   });
 }
+
+// 定时清理
+setInterval(() => {
+  try {
+    const now = Date.now();
+    for (const [key, stream] of streamMap.entries()) {
+      if (stream.watchCount <= 0 || now - stream.lastActive > TIMEOUT) {
+        stream.proc.kill("SIGKILL");
+        fs.rmSync(stream.dir, { recursive: true, force: true });
+        streamMap.delete(key);
+        console.log("Auto stop stream:", key);
+      }
+    }
+  } catch (e) {
+    console.log(e, "----------------------清理报错");
+  }
+}, 5000); // 每5秒检查一次
