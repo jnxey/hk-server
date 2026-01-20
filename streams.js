@@ -35,20 +35,30 @@ export function startStream(deviceId, channel, rtspUrl) {
 
   const args = [
     "-rtsp_transport",
-    "tcp", // RTSP TCP 方式，稳定
+    "tcp",
     "-i",
-    rtspUrl, // 输入 RTSP
-    "-an", // 不推音频
+    rtspUrl,
+    "-an", // 去掉音频
     "-c:v",
-    "copy", // 视频直接拷贝，不解码
+    "libx264", // 转码浏览器兼容 H.264
+    "-preset",
+    "veryfast",
+    "-tune",
+    "zerolatency",
+    "-profile:v",
+    "baseline", // Baseline Profile
+    "-level",
+    "3.1",
+    "-x264opts",
+    "keyint=50:min-keyint=25:no-scenecut", // 固定关键帧
     "-f",
-    "hls", // HLS 输出
+    "hls",
     "-hls_time",
-    "2", // 每个 ts 文件 2 秒
+    "1", // 每个 TS 1 秒
     "-hls_list_size",
-    "5", // m3u8 保留最近 5 个 ts
+    "5", // 保留 5 个 TS
     "-hls_flags",
-    "delete_segments+omit_endlist", // 自动删除旧 ts，不写 ENDLIST
+    "delete_segments+omit_endlist+temp_file",
     path.join(outDir, "index.m3u8"),
   ];
 
