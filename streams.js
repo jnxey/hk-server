@@ -44,7 +44,7 @@ export function startStream(deviceId, channel, rtspUrl) {
     "-f",
     "hls", // HLS 输出
     "-hls_time",
-    "2", // 每个 ts 文件 2 秒
+    "0.5", // 每个 ts 文件 2 秒
     "-hls_list_size",
     "5", // m3u8 保留最近 5 个 ts
     "-hls_flags",
