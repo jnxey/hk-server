@@ -50,7 +50,7 @@ export function startStream(deviceId, channel, rtspUrl) {
     "-level",
     "3.1",
     "-x264opts",
-    "keyint=25:min-keyint=25:no-scenecut", // 每 25 帧强制关键帧
+    "keyint=2:min-keyint=2:no-scenecut", // 每 25 帧强制关键帧
     "-flags",
     "low_delay", // 降低编码延迟
     "-fflags",
