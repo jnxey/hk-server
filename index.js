@@ -3,6 +3,7 @@ import tools from "./tools.js";
 import url from "url";
 import { heartbeat, startStream, stopStream } from "./streams.js";
 import path from "path";
+import fs from "fs";
 
 const PORT = 9996;
 
@@ -14,17 +15,47 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
   if (req.method === "OPTIONS") return res.sendStatus(204);
-  // 设置正确的 MIME 类型
-  // if (req.url.endsWith(".m3u8")) {
-  //   res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-  // } else if (req.url.endsWith(".ts")) {
-  //   res.setHeader("Content-Type", "video/mp2t");
-  // }
   next();
 });
 
 // 静态 HLS
-app.use("/hls", express.static(path.resolve("./public/hls")));
+const HLS_ROOT = path.resolve("./public/hls");
+tools.clearDir(HLS_ROOT); // 先清空
+app.get(/^\/hls\/(.+)$/, async (req, res) => {
+  const reqPath = req.params[0];
+  const filePath = path.join(HLS_ROOT, reqPath);
+  // 防目录穿越
+  if (!filePath.startsWith(HLS_ROOT)) return res.status(403).end();
+  // 没有找到文件，等待
+  if (!fs.existsSync(filePath)) {
+    try {
+      await tools.waitForFile(filePath);
+    } catch {
+      return res.status(404).end();
+    }
+  }
+  // Content-Type
+  if (filePath.endsWith(".m3u8")) {
+    res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+  } else if (filePath.endsWith(".ts")) {
+    res.setHeader("Content-Type", "video/mp2t");
+  }
+  const stat = fs.statSync(filePath);
+  const range = req.headers.range;
+  if (range) {
+    const [startStr, endStr] = range.replace("bytes=", "").split("-");
+    const start = parseInt(startStr, 10);
+    const end = endStr ? parseInt(endStr, 10) : stat.size - 1;
+    res.status(206);
+    res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Content-Length", end - start + 1);
+    fs.createReadStream(filePath, { start, end }).pipe(res);
+  } else {
+    res.setHeader("Content-Length", stat.size);
+    fs.createReadStream(filePath).pipe(res);
+  }
+});
 
 // 获取设备信息
 app.get("/getDeviceInfo", async (req, res) => {

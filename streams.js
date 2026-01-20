@@ -58,7 +58,7 @@ export function startStream(deviceId, channel, rtspUrl) {
     "-hls_list_size",
     "5", // 保留最新 5 个片段
     "-hls_flags",
-    "delete_segments+omit_endlist+temp_file",
+    "delete_segments+omit_endlist",
     path.join(outDir, "index.m3u8"),
   ];
 

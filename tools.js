@@ -1,5 +1,6 @@
 import DigestClient from "digest-fetch";
 import { XMLParser } from "fast-xml-parser";
+import fs from "fs";
 
 const parser = new XMLParser({ ignoreAttributes: false });
 
@@ -107,6 +108,30 @@ async function captureSnapshot({
   return Buffer.from(buffer);
 }
 
+// 等待加载文件
+function waitForFile(filePath, timeout = 3000) {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      if (fs.existsSync(filePath)) {
+        clearInterval(timer);
+        resolve();
+      } else if (Date.now() - start > timeout) {
+        clearInterval(timer);
+        reject();
+      }
+    }, 100);
+  });
+}
+
+// 删除文件夹
+function clearDir(dir) {
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(dir, { recursive: true });
+}
+
 // getDeviceInfo({ ip: '192.168.10.2', admin: 'admin', password: 'ac125689' });
 // getIpcChannels({ ip: '192.168.10.2', admin: 'admin', password: 'ac125689' });
 // getDevicePorts({ ip: '192.168.10.2', admin: 'admin', password: 'ac125689' });
@@ -118,4 +143,6 @@ export default {
   getIpcChannelsName,
   getDevicePorts,
   captureSnapshot,
+  waitForFile,
+  clearDir,
 };
