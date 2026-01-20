@@ -80,23 +80,28 @@ async function getDevicePorts({ ip, admin, password }) {
   return ports;
 }
 
+// 获取通道
+export function getChannelValue(id, isSmall = true) {
+  return Number(id) * 100 + (isSmall ? 2 : 1);
+}
+
 /**
  * 抓当前画面截图
  * @param {number} channelId - 通道号，默认 1
- * @param {boolean} subStream - 是否抓子码流 "02": 是 : "01": 不是
+ * @param {boolean} streamType - 码流类型  "01": 主流-大图 "02": 子流-图
  * @param {object} digest
  * @returns {Buffer} - JPEG 图片 Buffer
  */
 async function captureSnapshot({
   channelId = 1,
-  stream = "01",
+  streamType = "01",
   ip,
   admin,
   password,
 }) {
   const client = new DigestClient(admin, password);
   const res = await client.fetch(
-    `http://${ip}/ISAPI/Streaming/channels/${channelId}${stream}/picture`,
+    `http://${ip}/ISAPI/Streaming/channels/${getChannelValue(channelId, false)}/main/picture`,
   );
   if (!res.ok) {
     const text = await res.text();
@@ -142,6 +147,7 @@ export default {
   getIpcChannels,
   getIpcChannelsName,
   getDevicePorts,
+  getChannelValue,
   captureSnapshot,
   waitForFile,
   clearDir,

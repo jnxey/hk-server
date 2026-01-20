@@ -102,3 +102,46 @@ export function stopStream(deviceId, channel) {
   if (!stream) return;
   stream.watchCount--;
 }
+
+// 抓图片
+export function snapshotStream({ rtspUrl }) {
+  return new Promise((resolve, reject) => {
+    try {
+      const ffmpeg = spawn(ffmpegPath, [
+        "-rtsp_transport",
+        "tcp",
+        "-i",
+        rtspUrl,
+        "-vframes",
+        "1", // 只抓一帧
+        "-f",
+        "image2",
+        "-q:v",
+        "2", // 高质量 JPEG
+        "pipe:1", // 输出到 stdout
+      ]);
+
+      let imageBuffer = Buffer.alloc(0);
+
+      ffmpeg.stdout.on("data", (chunk) => {
+        imageBuffer = Buffer.concat([imageBuffer, chunk]);
+      });
+
+      ffmpeg.on("close", (code) => {
+        if (code === 0) {
+          resolve(imageBuffer);
+        } else {
+          reject();
+        }
+      });
+
+      ffmpeg.on("error", (err) => {
+        console.error(err);
+        reject();
+      });
+    } catch (err) {
+      console.error(err);
+      reject();
+    }
+  });
+}

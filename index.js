@@ -1,7 +1,12 @@
 import express from "express";
 import tools from "./tools.js";
 import url from "url";
-import { heartbeat, startStream, stopStream } from "./streams.js";
+import {
+  heartbeat,
+  snapshotStream,
+  startStream,
+  stopStream,
+} from "./streams.js";
 import path from "path";
 import fs from "fs";
 
@@ -52,7 +57,8 @@ app.get(/^\/hls\/(.+)$/, async (req, res) => {
       res.setHeader("Content-Length", stat.size);
       fs.createReadStream(filePath).pipe(res);
     }
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -63,7 +69,8 @@ app.get("/getDeviceInfo", async (req, res) => {
     const { query } = url.parse(req.url, true);
     const deviceInfo = await tools.getDeviceInfo(query);
     return res.json(deviceInfo);
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -74,7 +81,8 @@ app.get("/getIpcChannels", async (req, res) => {
     const { query } = url.parse(req.url, true);
     const channels = await tools.getIpcChannels(query);
     return res.json(channels);
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -85,7 +93,8 @@ app.get("/getIpcChannelsName", async (req, res) => {
     const { query } = url.parse(req.url, true);
     const channels = await tools.getIpcChannelsName(query);
     return res.json(channels);
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -96,7 +105,8 @@ app.get("/getDevicePorts", async (req, res) => {
     const { query } = url.parse(req.url, true);
     const ports = await tools.getDevicePorts(query);
     return res.json(ports);
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -105,11 +115,12 @@ app.get("/getDevicePorts", async (req, res) => {
 app.get("/captureSnapshot", async (req, res) => {
   try {
     const { query } = url.parse(req.url, true);
-    const imgData = await tools.captureSnapshot(query);
+    const imgData = await snapshotStream(query);
     res.setHeader("Content-Type", "image/jpeg");
     res.setHeader("Content-Length", imgData.length);
     return res.end(imgData);
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -121,7 +132,8 @@ app.get("/streamStart", async (req, res) => {
     const { deviceId, channel, rtsp } = query;
     startStream(deviceId, channel, rtsp);
     res.json({ ok: true, m3u8: `/hls/${deviceId}_${channel}/index.m3u8` });
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -133,7 +145,8 @@ app.get("/streamStop", async (req, res) => {
     const { deviceId, channel } = query;
     stopStream(deviceId, channel);
     res.json({ ok: true });
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
@@ -145,7 +158,8 @@ app.get("/streamHeartbeat", async (req, res) => {
     const { deviceId, channel } = query;
     heartbeat(deviceId, channel);
     res.json({ ok: true });
-  } catch {
+  } catch (e) {
+    console.log(e);
     return res.status(500).end();
   }
 });
