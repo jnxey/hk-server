@@ -4,7 +4,7 @@ import url from "url";
 import { heartbeat, startStream, stopStream } from "./streams.js";
 import path from "path";
 
-const PORT = 9968;
+const PORT = 9996;
 
 const app = express();
 app.use(express.json());
@@ -14,6 +14,12 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
   if (req.method === "OPTIONS") return res.sendStatus(204);
+  // 设置正确的 MIME 类型
+  // if (req.url.endsWith(".m3u8")) {
+  //   res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+  // } else if (req.url.endsWith(".ts")) {
+  //   res.setHeader("Content-Type", "video/mp2t");
+  // }
   next();
 });
 
@@ -81,6 +87,6 @@ app.get("/streamHeartbeat", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running at http://0.0.0.0:${PORT}`);
 });

@@ -33,6 +33,8 @@ export function startStream(deviceId, channel, rtspUrl) {
   const outDir = path.join(BASE_DIR, key);
   ensureDir(outDir);
 
+  const segmentTemplate = path.join(outDir, "index%d.ts");
+
   const args = [
     "-rtsp_transport",
     "tcp",
@@ -40,23 +42,23 @@ export function startStream(deviceId, channel, rtspUrl) {
     rtspUrl,
     "-an", // 去掉音频
     "-c:v",
-    "libx264", // 转码浏览器兼容 H.264
+    "libx264",
     "-preset",
     "veryfast",
     "-tune",
     "zerolatency",
     "-profile:v",
-    "baseline", // Baseline Profile
+    "baseline",
     "-level",
     "3.1",
     "-x264opts",
-    "keyint=50:min-keyint=25:no-scenecut", // 固定关键帧
+    "keyint=25:min-keyint=25:no-scenecut", // 每 25 帧强制关键帧
     "-f",
     "hls",
     "-hls_time",
     "1", // 每个 TS 1 秒
     "-hls_list_size",
-    "5", // 保留 5 个 TS
+    "5", // 保留最新 5 个片段
     "-hls_flags",
     "delete_segments+omit_endlist+temp_file",
     path.join(outDir, "index.m3u8"),
