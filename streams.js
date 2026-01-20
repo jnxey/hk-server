@@ -33,8 +33,6 @@ export function startStream(deviceId, channel, rtspUrl) {
   const outDir = path.join(BASE_DIR, key);
   ensureDir(outDir);
 
-  const segmentTemplate = path.join(outDir, "index%d.ts");
-
   const args = [
     "-rtsp_transport",
     "tcp",
