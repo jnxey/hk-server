@@ -1,57 +1,86 @@
-import http from "http";
-import url from "url";
+import express from "express";
 import tools from "./tools.js";
+import url from "url";
+import { heartbeat, startStream, stopStream } from "./streams.js";
+import path from "path";
 
-const PORT = 3000;
+const PORT = 9968;
 
-function getParams(value) {
-  return JSON.stringify(value);
-}
+const app = express();
+app.use(express.json());
 
-const server = http.createServer(async (req, res) => {
-  const { pathname, query } = url.parse(req.url, true);
-
-  // 允许跨域
+app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  // 统一返回 JSON
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-
-  // 测试
-  if (req.method === "GET" && pathname === "/") {
-    return res.end(getParams({ code: 0, msg: "" }));
-  }
-
-  // 获取设备信息
-  if (req.method === "GET" && pathname === "/getDeviceInfo") {
-    const deviceInfo = await tools.getDeviceInfo(query);
-    return res.end(getParams(deviceInfo));
-  }
-
-  // 获取通道
-  if (req.method === "GET" && pathname === "/getIpcChannels") {
-    const channels = await tools.getIpcChannels(query);
-    return res.end(getParams(channels));
-  }
-
-  // 获取设备端口
-  if (req.method === "GET" && pathname === "/getDevicePorts") {
-    const ports = await tools.getDevicePorts(query);
-    return res.end(getParams(ports));
-  }
-
-  // 获取设备端口
-  if (req.method === "GET" && pathname === "/captureSnapshot") {
-    const imgData = await tools.captureSnapshot(query);
-    res.setHeader("Content-Type", "image/jpeg");
-    res.setHeader("Content-Length", imgData.length);
-    return res.end(imgData);
-  }
-
-  // 404
-  res.statusCode = 404;
-  res.end(JSON.stringify({ msg: "Not Found" }));
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
 });
 
-server.listen(PORT, () => {
+// 静态 HLS
+app.use("/hls", express.static(path.resolve("./public/hls")));
+
+// 获取设备信息
+app.get("/getDeviceInfo", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const deviceInfo = await tools.getDeviceInfo(query);
+  return res.json(deviceInfo);
+});
+
+// 获取通道
+app.get("/getIpcChannels", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const channels = await tools.getIpcChannels(query);
+  return res.json(channels);
+});
+
+// 获取通道及名称
+app.get("/getIpcChannelsName", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const channels = await tools.getIpcChannelsName(query);
+  return res.json(channels);
+});
+
+// 获取设备端口
+app.get("/getDevicePorts", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const ports = await tools.getDevicePorts(query);
+  return res.json(ports);
+});
+
+// 截图
+app.get("/captureSnapshot", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const imgData = await tools.captureSnapshot(query);
+  res.setHeader("Content-Type", "image/jpeg");
+  res.setHeader("Content-Length", imgData.length);
+  return res.end(imgData);
+});
+
+// 开始播放
+app.get("/streamStart", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const { deviceId, channel, rtsp } = query;
+  startStream(deviceId, channel, rtsp);
+  res.json({ ok: true, m3u8: `/hls/${deviceId}_${channel}/index.m3u8` });
+});
+
+// 停止播放
+app.get("/streamStop", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const { deviceId, channel } = query;
+  stopStream(deviceId, channel);
+  res.json({ ok: true });
+});
+
+// 心跳处理
+app.get("/streamHeartbeat", async (req, res) => {
+  const { query } = url.parse(req.url, true);
+  const { deviceId, channel } = query;
+  heartbeat(deviceId, channel);
+  res.json({ ok: true });
+});
+
+app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

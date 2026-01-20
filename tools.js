@@ -18,9 +18,18 @@ async function getIpcChannels({ ip, admin, password }) {
   const res = await client.fetch(`http://${ip}/ISAPI/Streaming/channels`);
   const xml = await res.text();
   const obj = parser.parse(xml);
-  const channels = obj.StreamingChannelList.StreamingChannel;
-  console.log(channels);
-  return channels;
+  return obj?.StreamingChannelList?.StreamingChannel ?? [];
+}
+
+// 获取通道
+async function getIpcChannelsName({ ip, admin, password }) {
+  const client = new DigestClient(admin, password);
+  const res = await client.fetch(
+    `http://${ip}/ISAPI/ContentMgmt/InputProxy/channels`,
+  );
+  const xml = await res.text();
+  const obj = parser.parse(xml);
+  return obj?.InputProxyChannelList?.InputProxyChannel ?? [];
 }
 
 // 获取设备端口
@@ -73,19 +82,18 @@ async function getDevicePorts({ ip, admin, password }) {
 /**
  * 抓当前画面截图
  * @param {number} channelId - 通道号，默认 1
- * @param {boolean} subStream - 是否抓子码流
+ * @param {boolean} subStream - 是否抓子码流 "02": 是 : "01": 不是
  * @param {object} digest
  * @returns {Buffer} - JPEG 图片 Buffer
  */
 async function captureSnapshot({
   channelId = 1,
-  subStream = false,
+  stream = "01",
   ip,
   admin,
   password,
 }) {
   const client = new DigestClient(admin, password);
-  const stream = subStream ? "02" : "01";
   const res = await client.fetch(
     `http://${ip}/ISAPI/Streaming/channels/${channelId}${stream}/picture`,
   );
@@ -96,7 +104,6 @@ async function captureSnapshot({
 
   // 返回 Buffer
   const buffer = await res.arrayBuffer();
-  console.log(Buffer.from(buffer));
   return Buffer.from(buffer);
 }
 
@@ -108,6 +115,7 @@ async function captureSnapshot({
 export default {
   getDeviceInfo,
   getIpcChannels,
+  getIpcChannelsName,
   getDevicePorts,
   captureSnapshot,
 };
