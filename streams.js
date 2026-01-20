@@ -60,7 +60,7 @@ export function startStream(deviceId, channel, rtspUrl) {
     "-f",
     "hls",
     "-hls_time",
-    "1", // 每个 TS 1 秒
+    "0.2", // 每个 TS 1 秒
     "-hls_list_size",
     "3", // 保留最新 5 个片段
     "-hls_flags",
