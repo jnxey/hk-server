@@ -51,14 +51,20 @@ export function startStream(deviceId, channel, rtspUrl) {
     "3.1",
     "-x264opts",
     "keyint=25:min-keyint=25:no-scenecut", // 每 25 帧强制关键帧
+    "-flags",
+    "low_delay", // 降低编码延迟
+    "-fflags",
+    "nobuffer", // 避免缓冲
+    "-flags",
+    "+global_header", // 兼容 HLS
     "-f",
     "hls",
     "-hls_time",
     "1", // 每个 TS 1 秒
     "-hls_list_size",
-    "5", // 保留最新 5 个片段
+    "3", // 保留最新 5 个片段
     "-hls_flags",
-    "delete_segments+omit_endlist",
+    "delete_segments+append_list+omit_endlist",
     path.join(outDir, "index.m3u8"),
   ];
 
