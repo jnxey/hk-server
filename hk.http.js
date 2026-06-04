@@ -48,19 +48,6 @@ app.post('/webrtc', async (req, res) => {
     }
 });
 
-// WebRTC SDP 协商（动态传 ip/name/password + sdp + type）
-app.post('/webrtc/negotiate', async (req, res) => {
-    try {
-        const cam = new HikCamera(req.body);
-        const sdp = req.body.sdp;
-        const sdpType = req.body.type;
-        const answerSdp = await cam.negotiateWebRTC(sdp, sdpType);
-        res.send({ code: 200, data: { sdp: answerSdp } });
-    } catch (e) {
-        res.status(500).send({ err: e.message });
-    }
-});
-
 const httpsServer = https.createServer(loadTlsOptions(), app);
 httpsServer.listen(PORT, () => {
     console.log(`服务启动: https://127.0.0.1:${PORT}`);
