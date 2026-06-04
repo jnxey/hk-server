@@ -1,4 +1,4 @@
-const DigestFetch = require('digest-fetch');
+const DigestFetch = require('digest-fetch').default;
 const fs = require('fs');
 
 /**
