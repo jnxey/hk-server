@@ -44,9 +44,24 @@ class HikCamera {
      * 摄像头抓图（返回 JPEG Buffer）
      * @returns {Promise<Buffer>}
      */
-    async takeSnapshot() {
+    async takeSnapshotSmall() {
         try {
             const url = `http://${this.ip}/ISAPI/Streaming/channels/102/picture`;
+            const res = await this.client.fetch(url, {method: 'GET'});
+            const arrayBuffer = await res.arrayBuffer();
+            return Buffer.from(arrayBuffer);
+        } catch (err) {
+            throw new Error('截图失败: ' + err.message);
+        }
+    }
+
+    /**
+     * 摄像头抓图（返回 JPEG Buffer）
+     * @returns {Promise<Buffer>}
+     */
+    async takeSnapshotBig() {
+        try {
+            const url = `http://${this.ip}/ISAPI/Streaming/channels/101/picture?videoResolutionWidth=1920&videoResolutionHeight=1080&compressionRate=95`;
             const res = await this.client.fetch(url, {method: 'GET'});
             const arrayBuffer = await res.arrayBuffer();
             return Buffer.from(arrayBuffer);
