@@ -43,6 +43,31 @@ class HikCamera {
     }
 
     /**
+     * WebRTC SDP 协商（代浏览器向设备提交 offer/answer）
+     * @param {string} sdp
+     * @param {string} sdpType offer | answer
+     */
+    async negotiateWebRTC(sdp, sdpType) {
+        try {
+            const url = `http://${this.ip}/ISAPI/Streaming/channels/101/webrtc`;
+            const res = await this.client.fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/sdp' },
+                body: sdp,
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || res.statusText || 'webrtc_negotiate_failed');
+            }
+
+            return await res.text();
+        } catch (err) {
+            throw new Error('WebRTC 协商失败: ' + err.message);
+        }
+    }
+
+    /**
      * 摄像头截图（返回 Buffer）
      * @returns Promise<Buffer>
      */
