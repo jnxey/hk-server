@@ -2,9 +2,11 @@ const express = require('express');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors');
 const HikCamera = require('./hk.service');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const PORT = Number(process.env.HTTPS_PORT) || 9999;
