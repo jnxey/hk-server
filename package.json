@@ -7,6 +7,7 @@
     "@babel/preset-env": "^7.28.5",
     "@rollup/plugin-babel": "^6.1.0",
     "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "prettier": "^3.7.4",
     "rollup-plugin-terser": "^7.0.2"
@@ -15,6 +16,7 @@
     "axios": "^1.17.0",
     "cors": "^2.8.5",
     "digest-fetch": "^3.1.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "node-fetch": "^2.7.0"
   }
 }
