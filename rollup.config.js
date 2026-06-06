@@ -6,11 +6,11 @@ import commonjs from "@rollup/plugin-commonjs";
 
 export default {
   // 入口文件路径
-  input: "./index.js",
+  input: "./hk.http.js",
   // 输出配置
   output: [
     {
-      file: "../electron-app/hk-server.js", // 输出文件路径
+      file: "../gv-web-electron/hk.http.js", // 输出文件路径
       format: "cjs", // ES模块格式，适合现代打包工具
       sourcemap: false, // 生成sourcemap便于调试
     },
