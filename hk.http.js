@@ -6,6 +6,11 @@ const cors = require('cors');
 const HikCamera = require('./hk.service');
 
 const app = express();
+// 公网页面访问本机服务时，Chrome 需要 Private Network Access 响应头
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    next();
+});
 app.use(cors());
 app.use(express.json());
 
