@@ -59,6 +59,21 @@ class HikCamera {
      * 摄像头抓图（返回 JPEG Buffer）
      * @returns {Promise<Buffer>}
      */
+    async takeSnapshotBangShi() {
+        try {
+            const url = `http://${this.ip}/Snapshot/1/RemoteImageCapture?ImageFormat=2?` + Date.now();
+            const res = await this.client.fetch(url, {method: 'GET'});
+            const arrayBuffer = await res.arrayBuffer();
+            return Buffer.from(arrayBuffer);
+        } catch (err) {
+            throw new Error('截图失败: ' + err.message);
+        }
+    }
+
+    /**
+     * 摄像头抓图（返回 JPEG Buffer）
+     * @returns {Promise<Buffer>}
+     */
     async takeSnapshotBig() {
         try {
             const url = `http://${this.ip}/ISAPI/Streaming/channels/101/picture?videoResolutionWidth=1920&videoResolutionHeight=1080&compressionRate=95`;

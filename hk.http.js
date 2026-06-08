@@ -51,6 +51,18 @@ app.post('/snapshot-big', async (req, res) => {
     }
 });
 
+// 截图接口（动态传 ip/user/password）
+app.post('/snapshot-bang-shi', async (req, res) => {
+    try {
+        const cam = new HikCamera(req.body);
+        const buf = await cam.takeSnapshotBangShi();
+        res.set('Content-Type', 'image/jpeg');
+        res.send(buf);
+    } catch (e) {
+        res.status(500).send({ err: e.message });
+    }
+});
+
 // WebRTC 接口（动态传配置）
 app.post('/webrtc', async (req, res) => {
     try {
