@@ -5,6 +5,8 @@ const path = require('path');
 
 const RTSP_PORT = 554;
 const STREAM_CHANNEL_MAIN = 101;
+const SNAPSHOT_BIG_WIDTH = 1920;
+const SNAPSHOT_BIG_HEIGHT = 1080;
 
 function getFfmpegPath() {
     if (process.env.FFMPEG_PATH) {
@@ -122,10 +124,20 @@ class HikCamera {
                 const ffmpeg = spawn(
                     ffmpegCmd,
                     [
+                        '-probesize',
+                        '32',
+                        '-analyzeduration',
+                        '0',
+                        '-fflags',
+                        'nobuffer',
+                        '-flags',
+                        'low_delay',
                         '-rtsp_transport',
                         'tcp',
                         '-i',
                         rtspUrl,
+                        '-vf',
+                        `scale=${SNAPSHOT_BIG_WIDTH}:${SNAPSHOT_BIG_HEIGHT}`,
                         '-frames:v',
                         '1',
                         '-q:v',
