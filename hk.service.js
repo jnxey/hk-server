@@ -1,4 +1,27 @@
 const DigestFetch = require('digest-fetch').default;
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const RTSP_PORT = 554;
+const STREAM_CHANNEL_MAIN = 101;
+
+function getFfmpegPath() {
+    if (process.env.FFMPEG_PATH) {
+        return process.env.FFMPEG_PATH;
+    }
+    const localFfmpeg = path.join(__dirname, 'ffmpeg.exe');
+    if (fs.existsSync(localFfmpeg)) {
+        return localFfmpeg;
+    }
+    try {
+        const ffmpegStatic = require('ffmpeg-static');
+        if (ffmpegStatic && fs.existsSync(ffmpegStatic)) {
+            return ffmpegStatic;
+        }
+    } catch (err) {}
+    return 'ffmpeg';
+}
 
 /**
  * 海康摄像头（动态传 config：ip、name、password）
@@ -91,10 +114,60 @@ class HikCamera {
      */
     async takeSnapshotBig() {
         try {
-            const url = `http://${this.ip}/ISAPI/Streaming/channels/101/picture?videoResolutionWidth=1920&videoResolutionHeight=1080&compressionRate=95`;
-            const res = await this.client.fetch(url, {method: 'GET'});
-            const arrayBuffer = await res.arrayBuffer();
-            return Buffer.from(arrayBuffer);
+            const user = encodeURIComponent(this.user);
+            const pass = encodeURIComponent(this.pass);
+            const rtspUrl = `rtsp://${user}:${pass}@${this.ip}:${RTSP_PORT}/Streaming/Channels/${STREAM_CHANNEL_MAIN}`;
+            const ffmpegCmd = getFfmpegPath();
+            const buf = await new Promise((resolve, reject) => {
+                const ffmpeg = spawn(
+                    ffmpegCmd,
+                    [
+                        '-rtsp_transport',
+                        'tcp',
+                        '-i',
+                        rtspUrl,
+                        '-frames:v',
+                        '1',
+                        '-q:v',
+                        '2',
+                        '-f',
+                        'image2pipe',
+                        '-vcodec',
+                        'mjpeg',
+                        'pipe:1',
+                    ],
+                    {stdio: ['ignore', 'pipe', 'pipe']},
+                );
+                const chunks = [];
+                let stderr = '';
+
+                ffmpeg.stdout.on('data', (chunk) => {
+                    chunks.push(chunk);
+                });
+                ffmpeg.stderr.on('data', (chunk) => {
+                    stderr += chunk.toString();
+                });
+                ffmpeg.on('error', (err) => {
+                    if (err.code === 'ENOENT') {
+                        reject(new Error('未找到 ffmpeg，请安装 ffmpeg 或设置 FFMPEG_PATH'));
+                        return;
+                    }
+                    reject(err);
+                });
+                ffmpeg.on('close', (code) => {
+                    if (code !== 0) {
+                        reject(new Error(stderr || `ffmpeg exit ${code}`));
+                        return;
+                    }
+                    const imageBuf = Buffer.concat(chunks);
+                    if (imageBuf.length < 2 || imageBuf[0] !== 0xff || imageBuf[1] !== 0xd8) {
+                        reject(new Error('响应为空或非 JPEG'));
+                        return;
+                    }
+                    resolve(imageBuf);
+                });
+            });
+            return buf;
         } catch (err) {
             throw new Error('截图失败: ' + err.message);
         }

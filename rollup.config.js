@@ -39,7 +39,8 @@ const nodeBuiltins = [
 ];
 
 export default {
-  external: (id) => nodeBuiltins.includes(id) || id.startsWith("node:"),
+  external: (id) =>
+    nodeBuiltins.includes(id) || id.startsWith("node:") || id === "ffmpeg-static",
   // 入口文件路径
   input: "./hk.http.js",
   // 输出配置
