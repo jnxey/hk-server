@@ -44,6 +44,18 @@ app.post('/snapshot-small', async (req, res) => {
     }
 });
 
+// 截图接口（HTTP 101 主码流，动态传 ip/user/password）
+app.post('/snapshot-big-http', async (req, res) => {
+    try {
+        const cam = new HikCamera(req.body);
+        const buf = await cam.takeSnapshotBigHttp();
+        res.set('Content-Type', 'image/jpeg');
+        res.send(buf);
+    } catch (e) {
+        res.status(500).send({ err: e.message });
+    }
+});
+
 // 截图接口（动态传 ip/user/password）
 app.post('/snapshot-big', async (req, res) => {
     try {

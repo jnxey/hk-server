@@ -111,6 +111,21 @@ class HikCamera {
     }
 
     /**
+     * 摄像头抓图（HTTP 101 主码流，返回 JPEG Buffer）
+     * @returns {Promise<Buffer>}
+     */
+    async takeSnapshotBigHttp() {
+        try {
+            const url = `http://${this.ip}/ISAPI/Streaming/channels/${STREAM_CHANNEL_MAIN}/picture`;
+            const res = await this.client.fetch(url, {method: 'GET'});
+            const arrayBuffer = await res.arrayBuffer();
+            return Buffer.from(arrayBuffer);
+        } catch (err) {
+            throw new Error('截图失败: ' + err.message);
+        }
+    }
+
+    /**
      * 摄像头抓图（返回 JPEG Buffer）
      * @returns {Promise<Buffer>}
      */
