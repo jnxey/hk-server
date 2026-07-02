@@ -80,6 +80,21 @@ app.post('/snapshot-bang-shi', async (req, res) => {
     }
 });
 
+// 账号密码检测接口（动态传 ip/user/password）
+app.post('/check-credentials', async (req, res) => {
+    try {
+        const cam = new HikCamera(req.body);
+        const result = await cam.checkCredentials();
+        if (result.valid) {
+            res.send({code: 200, valid: true});
+            return;
+        }
+        res.status(401).send({code: 401, valid: false, err: '账号或密码错误'});
+    } catch (e) {
+        res.status(500).send({err: e.message});
+    }
+});
+
 // WebRTC 接口（动态传配置）
 app.post('/webrtc', async (req, res) => {
     try {

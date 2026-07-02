@@ -38,6 +38,33 @@ class HikCamera {
     }
 
     /**
+     * 检测账号密码是否有效
+     * @returns {Promise<{ valid: boolean }>}
+     */
+    async checkCredentials() {
+        const url = `http://${this.ip}/ISAPI/System/deviceInfo`;
+        const clients = [this.client, this.basicClient];
+        let lastErr;
+
+        for (const client of clients) {
+            try {
+                const res = await client.fetch(url, {method: 'GET'});
+                if (res.status === 401 || res.status === 403) {
+                    return {valid: false};
+                }
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                }
+                return {valid: true};
+            } catch (err) {
+                lastErr = err;
+            }
+        }
+
+        throw new Error('账号检测失败: ' + lastErr.message);
+    }
+
+    /**
      * 获取海康 WebRTC 播放地址
      * @returns Promise<string> WebRTC 信息
      */
