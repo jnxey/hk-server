@@ -33,24 +33,36 @@ class HikCamera {
         this.ip = config.ip;
         this.user = config.name || config.user || config.username;
         this.pass = config.password;
+        this.type = config.type || config.brand || '';
         this.client = new DigestFetch(this.user, this.pass);
         this.basicClient = new DigestFetch(this.user, this.pass, {basic: true});
     }
 
+    _normalizeCameraType() {
+        return String(this.type || '')
+            .toLowerCase()
+            .replace(/-/g, '');
+    }
+
     /**
-     * 检测账号密码是否有效
+     * 检测账号密码是否有效（海康 ISAPI）
      * @returns {Promise<{ valid: boolean }>}
      */
-    async checkCredentials() {
+    async checkCredentialsHik() {
         const url = `http://${this.ip}/ISAPI/System/deviceInfo`;
         const clients = [this.client, this.basicClient];
         let lastErr;
+        let authFailed = false;
 
         for (const client of clients) {
             try {
                 const res = await client.fetch(url, {method: 'GET'});
                 if (res.status === 401 || res.status === 403) {
-                    return {valid: false};
+                    authFailed = true;
+                    continue;
+                }
+                if (res.status === 404) {
+                    throw new Error('HIK_NOT_SUPPORTED');
                 }
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status} ${res.statusText}`);
@@ -61,7 +73,70 @@ class HikCamera {
             }
         }
 
+        if (authFailed) {
+            return {valid: false};
+        }
         throw new Error('账号检测失败: ' + lastErr.message);
+    }
+
+    /**
+     * 检测账号密码是否有效（邦世）
+     * @returns {Promise<{ valid: boolean }>}
+     */
+    async checkCredentialsBangShi() {
+        const url = `http://${this.ip}/Snapshot/1/RemoteImageCapture?ImageFormat=2`;
+        const clients = [this.client, this.basicClient];
+        let lastErr;
+        let authFailed = false;
+
+        for (const client of clients) {
+            try {
+                const res = await client.fetch(url, {method: 'GET'});
+                if (res.status === 401 || res.status === 403) {
+                    authFailed = true;
+                    continue;
+                }
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                }
+                const buf = Buffer.from(await res.arrayBuffer());
+                if (buf.length < 2 || buf[0] !== 0xff || buf[1] !== 0xd8) {
+                    const preview = buf.toString('utf8', 0, 200).replace(/\s+/g, ' ').trim();
+                    throw new Error(preview ? `响应非 JPEG: ${preview}` : '响应为空或非 JPEG');
+                }
+                return {valid: true};
+            } catch (err) {
+                lastErr = err;
+            }
+        }
+
+        if (authFailed) {
+            return {valid: false};
+        }
+        throw new Error('账号检测失败: ' + lastErr.message);
+    }
+
+    /**
+     * 检测账号密码是否有效
+     * @returns {Promise<{ valid: boolean }>}
+     */
+    async checkCredentials() {
+        const type = this._normalizeCameraType();
+        if (type === 'bangshi' || type === '邦世') {
+            return this.checkCredentialsBangShi();
+        }
+        if (type === 'hik' || type === 'hikvision' || type === '海康') {
+            return this.checkCredentialsHik();
+        }
+
+        try {
+            return await this.checkCredentialsHik();
+        } catch (err) {
+            if (err.message === 'HIK_NOT_SUPPORTED' || err.message.includes('HIK_NOT_SUPPORTED')) {
+                return this.checkCredentialsBangShi();
+            }
+            throw err;
+        }
     }
 
     /**

@@ -80,7 +80,7 @@ app.post('/snapshot-bang-shi', async (req, res) => {
     }
 });
 
-// 账号密码检测接口（动态传 ip/user/password）
+// 账号密码检测接口（海康/邦世，动态传 ip/user/password，可选 type: hik|bangshi）
 app.post('/check-credentials', async (req, res) => {
     try {
         const cam = new HikCamera(req.body);
